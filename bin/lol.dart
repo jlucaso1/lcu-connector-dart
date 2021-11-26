@@ -1,18 +1,26 @@
-import 'dart:io';
+import 'package:lol/event_response.dart';
+import 'package:lol/lcu.dart';
+import 'package:lol/summoner/summoner.dart';
 
 main() async {
-  final portRegex = new RegExp(
-    r'--app-port=([0-9]+)',
-  );
-  final passwordRegex = new RegExp(r'--remoting-auth-token=([\w-_]+)');
-
-  // List all files in the current directory in UNIX-like systems.
-  var result = await Process.run(
-    'cmd',
-    ["/C", "WMIC PROCESS WHERE name='LeagueClientUx.exe' GET CommandLine"],
-  );
-  String? port = portRegex.firstMatch(result.stdout)!.group(1);
-  String? password = passwordRegex.firstMatch(result.stdout)!.group(1);
-  print('port: $port');
-  print('password: $password');
+  final lcu = new LcuApi();
+  lcu.events.on('connected', (_) async {
+    print("Connected");
+    // Get summoner infos
+    Summoner mySummoner = await lcu.summonerManager.currentSummoner;
+    print(
+        'Summoner: ${mySummoner.displayName} | Level: ${mySummoner.summonerLevel}');
+    // Listen for queue changes
+    lcu.events.on('/lol-matchmaking/v1/search', (message) {
+      EventResponse evResponse = message;
+      if (evResponse.eventType == 'Create') {
+        print('Queue search started');
+      } else if (evResponse.eventType == 'Delete') {
+        print('Queue search stopped');
+      }
+    });
+  });
+  lcu.events.on('error', (message) {
+    print(message.toString());
+  });
 }

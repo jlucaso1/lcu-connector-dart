@@ -3,34 +3,80 @@ library lcu;
 import 'dart:convert';
 import "dart:io";
 import 'dart:async';
+import 'package:event_listener/event_listener.dart';
+import 'package:lol/event_response.dart';
 import 'package:lol/summoner/summoner.dart';
 
+final portRegex = new RegExp(
+  r'--app-port=([0-9]+)',
+);
+final tokenRegex = new RegExp(r'--remoting-auth-token=([\w-_]+)');
+final installPathRegex = new RegExp(r'--install-directory=(.+?)"');
+
 class LcuApi {
-  int? port;
+  late String port;
   String? token;
   final String host = "127.0.0.1";
+  late String installPath;
+  final EventListener events = new EventListener();
   String username = "riot";
-  SummonerManager? summonerManager;
-  HttpClient? client;
+  late SummonerManager summonerManager;
+  late HttpClient client;
+  late WebSocket _socket;
+
   String get fullToken {
-    return "$username:$token";
+    return "${username}:${token}";
   }
 
   String get baseUrl {
-    return "https://127.0.0.1:$port";
+    return "https://127.0.0.1:${port}";
   }
 
-  LcuApi(String leagueLocation) {
-    var file = File("$leagueLocation/lockfile");
-    var text = file.readAsStringSync();
-    var entries = text.split(":");
-    port = int.parse(entries[2]);
-    token = entries[3];
-
+  LcuApi() {
     client = HttpClient();
-    client!.badCertificateCallback =
+    client.badCertificateCallback =
         ((X509Certificate cert, String host, int port) => true);
-    summonerManager = new SummonerManager(this);
+    start();
+  }
+  start() async {
+    HttpOverrides.global = new MyHttpOverrides();
+    try {
+      await loadProcess();
+      await loadWebSocket();
+      this.events.emit('connected', this);
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  loadProcess() async {
+    var result = await Process.run(
+      'cmd',
+      ["/C", "WMIC PROCESS WHERE name='LeagueClientUx.exe' GET CommandLine"],
+    );
+    if (result.stderr != "") {
+      throw new Exception('League of legends is not running!');
+    }
+    port = portRegex.firstMatch(result.stdout)!.group(1)!;
+    token = tokenRegex.firstMatch(result.stdout)!.group(1)!;
+    installPath = installPathRegex.firstMatch(result.stdout)!.group(1)!;
+    this.summonerManager = new SummonerManager(this);
+  }
+
+  loadWebSocket() async {
+    _socket = await WebSocket.connect(
+        'wss://${this.fullToken}@127.0.0.1:${this.port}');
+    _socket.listen((event) {
+      try {
+        List<dynamic> dataDecoded = json.decode(event);
+        Map<String, dynamic> data = dataDecoded[2];
+        EventResponse<dynamic> evResponse = EventResponse.fromJson(data);
+        if (this.events.events.containsKey(evResponse.uri)) {
+          this.events.emit(evResponse.uri, evResponse);
+        }
+      } catch (_) {}
+    });
+    _socket.add(json.encode([5, 'OnJsonApiEvent']));
   }
 
   Future<T> request<T>(HttpMethod method, String path, [String? body]) async {
@@ -39,18 +85,18 @@ class LcuApi {
     Future<HttpClientRequest> Function(Uri) fn;
     switch (method) {
       case HttpMethod.GET:
-        fn = client!.getUrl;
+        fn = client.getUrl;
         break;
       case HttpMethod.PUT:
-        fn = client!.putUrl;
+        fn = client.putUrl;
         hasBody = true;
         break;
       case HttpMethod.POST:
-        fn = client!.postUrl;
+        fn = client.postUrl;
         hasBody = true;
         break;
       case HttpMethod.DELETE:
-        fn = client!.deleteUrl;
+        fn = client.deleteUrl;
         break;
     }
     var req = await fn(Uri.parse("$baseUrl$path"))
@@ -74,3 +120,12 @@ class LcuApi {
 }
 
 enum HttpMethod { PUT, GET, DELETE, POST }
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}

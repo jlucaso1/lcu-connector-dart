@@ -7,7 +7,9 @@ environment:
   sdk: ">=2.14.4 <3.0.0"
 
 dependencies:
+  event_listener: 
+    git: https://github.com/jlucaso1/event_listener
   http: ^0.13.4
 
 dev_dependencies:
-  test: ^1.16.0
+  test: ^1.19.4
