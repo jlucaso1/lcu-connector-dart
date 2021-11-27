@@ -1,6 +1,6 @@
-import 'package:lol/event_response.dart';
-import 'package:lol/lcu.dart';
-import 'package:lol/summoner/summoner.dart';
+import 'package:lcu_connector/event_response.dart';
+import 'package:lcu_connector/lcu.dart';
+import 'package:lcu_connector/summoner/summoner.dart';
 
 main() async {
   final lcu = new LcuApi();

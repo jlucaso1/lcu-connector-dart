@@ -1,4 +1,4 @@
-import 'package:lol/lcu.dart';
+import 'package:lcu_connector/lcu.dart';
 
 class Summoner {
   int? accountId;

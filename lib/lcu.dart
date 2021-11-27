@@ -4,8 +4,8 @@ import 'dart:convert';
 import "dart:io";
 import 'dart:async';
 import 'package:event_listener/event_listener.dart';
-import 'package:lol/event_response.dart';
-import 'package:lol/summoner/summoner.dart';
+import 'package:lcu_connector/event_response.dart';
+import 'package:lcu_connector/summoner/summoner.dart';
 
 final portRegex = new RegExp(
   r'--app-port=([0-9]+)',
