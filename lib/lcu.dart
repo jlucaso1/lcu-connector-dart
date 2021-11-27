@@ -53,6 +53,7 @@ class LcuApi {
     var result = await Process.run(
       'cmd',
       ["/C", "WMIC PROCESS WHERE name='LeagueClientUx.exe' GET CommandLine"],
+      runInShell: true,
     );
     if (result.stderr != "") {
       throw new Exception('League of legends is not running!');
