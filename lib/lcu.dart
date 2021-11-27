@@ -4,8 +4,9 @@ import 'dart:convert';
 import "dart:io";
 import 'dart:async';
 import 'package:event_listener/event_listener.dart';
+import 'package:lcu_connector/authentication.dart';
 import 'package:lcu_connector/event_response.dart';
-import 'package:lcu_connector/summoner/summoner.dart';
+// import 'package:lcu_connector/summoner/summoner.dart';
 
 final portRegex = new RegExp(
   r'--app-port=([0-9]+)',
@@ -14,34 +15,21 @@ final tokenRegex = new RegExp(r'--remoting-auth-token=([\w-_]+)');
 final installPathRegex = new RegExp(r'--install-directory=(.+?)"');
 
 class LcuApi {
-  late String port;
-  String? token;
-  final String host = "127.0.0.1";
-  late String installPath;
   final EventListener events = new EventListener();
-  String username = "riot";
-  late SummonerManager summonerManager;
+  // late SummonerManager summonerManager;
   late HttpClient client;
-  late WebSocket _socket;
-
-  String get fullToken {
-    return "${username}:${token}";
-  }
-
-  String get baseUrl {
-    return "https://127.0.0.1:${port}";
-  }
+  late WebSocket socket;
+  Authentication authentication = new Authentication();
 
   LcuApi() {
     client = HttpClient();
     client.badCertificateCallback =
         ((X509Certificate cert, String host, int port) => true);
-    start();
+    HttpOverrides.global = new MyHttpOverrides();
   }
   start() async {
-    HttpOverrides.global = new MyHttpOverrides();
     try {
-      await loadProcess();
+      await authentication.CheckLolRunning();
       await loadWebSocket();
       this.events.emit('connected', this);
     } catch (e) {
@@ -49,25 +37,9 @@ class LcuApi {
     }
   }
 
-  loadProcess() async {
-    var result = await Process.run(
-      'cmd',
-      ["/C", "WMIC PROCESS WHERE name='LeagueClientUx.exe' GET CommandLine"],
-      runInShell: true,
-    );
-    if (result.stderr != "") {
-      throw new Exception('League of legends is not running!');
-    }
-    port = portRegex.firstMatch(result.stdout)!.group(1)!;
-    token = tokenRegex.firstMatch(result.stdout)!.group(1)!;
-    installPath = installPathRegex.firstMatch(result.stdout)!.group(1)!;
-    this.summonerManager = new SummonerManager(this);
-  }
-
   loadWebSocket() async {
-    _socket = await WebSocket.connect(
-        'wss://${this.fullToken}@127.0.0.1:${this.port}');
-    _socket.listen((event) {
+    socket = await WebSocket.connect(authentication.wsURL);
+    socket.listen((event) {
       try {
         List<dynamic> dataDecoded = json.decode(event);
         Map<String, dynamic> data = dataDecoded[2];
@@ -77,7 +49,7 @@ class LcuApi {
         }
       } catch (_) {}
     });
-    _socket.add(json.encode([5, 'OnJsonApiEvent']));
+    socket.add(json.encode([5, 'OnJsonApiEvent']));
   }
 
   Future<T> request<T>(HttpMethod method, String path, [String? body]) async {
@@ -100,10 +72,10 @@ class LcuApi {
         fn = client.deleteUrl;
         break;
     }
-    var req = await fn(Uri.parse("$baseUrl$path"))
+    var req = await fn(Uri.parse("${authentication.baseUrl}$path"))
       ..headers.add(HttpHeaders.acceptHeader, "*/*")
       ..headers.add(HttpHeaders.authorizationHeader,
-          "Basic " + base64Encode(utf8.encode('$username:$token')));
+          "Basic " + base64Encode(utf8.encode('riot:${authentication.token}')));
     if (hasBody) {
       req.headers.contentLength = body!.length;
       req.headers.contentType = ContentType("application", "json");

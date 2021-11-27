@@ -1,15 +1,12 @@
 import 'package:lcu_connector/event_response.dart';
 import 'package:lcu_connector/lcu.dart';
-import 'package:lcu_connector/summoner/summoner.dart';
 
 main() async {
   final lcu = new LcuApi();
+
   lcu.events.on('connected', (_) async {
     print("Connected");
-    // Get summoner infos
-    Summoner mySummoner = await lcu.summonerManager.currentSummoner;
-    print(
-        'Summoner: ${mySummoner.displayName} | Level: ${mySummoner.summonerLevel}');
+
     // Listen for queue changes
     lcu.events.on('/lol-matchmaking/v1/search', (message) {
       EventResponse evResponse = message;
@@ -23,4 +20,6 @@ main() async {
   lcu.events.on('error', (message) {
     print(message.toString());
   });
+
+  await lcu.start();
 }
