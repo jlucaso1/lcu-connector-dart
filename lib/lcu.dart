@@ -52,7 +52,7 @@ class LcuApi {
     socket.add(json.encode([5, 'OnJsonApiEvent']));
   }
 
-  Future<T> request<T>(HttpMethod method, String path, [String? body]) async {
+  Future<T?> request<T>(HttpMethod method, String path, [String? body]) async {
     bool hasBody = false;
 
     Future<HttpClientRequest> Function(Uri) fn;
@@ -62,15 +62,16 @@ class LcuApi {
         break;
       case HttpMethod.PUT:
         fn = client.putUrl;
-        hasBody = true;
         break;
       case HttpMethod.POST:
         fn = client.postUrl;
-        hasBody = true;
         break;
       case HttpMethod.DELETE:
         fn = client.deleteUrl;
         break;
+    }
+    if (body != null) {
+      hasBody = true;
     }
     var req = await fn(Uri.parse("${authentication.baseUrl}$path"))
       ..headers.add(HttpHeaders.acceptHeader, "*/*")
@@ -88,7 +89,12 @@ class LcuApi {
       contents.write(data);
     }, onDone: () => completer.complete(contents.toString()));
 
-    return jsonDecode(await completer.future);
+    var response = await completer.future;
+    if (response.isEmpty) {
+      return null;
+    }
+
+    return jsonDecode(response);
   }
 }
 
