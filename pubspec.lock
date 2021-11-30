@@ -81,12 +81,10 @@ packages:
   event_listener:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "16b75347bb2fec4d33013b6f398428c100d0ad16"
-      url: "https://github.com/jlucaso1/event_listener"
-    source: git
-    version: "0.1.6"
+      name: event_listener
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
   file:
     dependency: transitive
     description:
