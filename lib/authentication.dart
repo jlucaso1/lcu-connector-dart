@@ -13,21 +13,7 @@ class Authentication {
   late String? installPath;
   bool isRunning = false;
 
-  Authentication() {
-    CheckLolRunning();
-  }
-
-  // StartTick() {
-  //   _timer = new Timer(const Duration(seconds: 5), () async {
-  //     print('Checking if LoL is running...');
-  //     await CheckLolRunning();
-  //     StartTick();
-  //   });
-  // }
-
-  // StopTick() {
-  //   _timer.cancel();
-  // }
+  Authentication() {}
 
   Future<bool> CheckLolRunning() async {
     var result = await Process.run(
@@ -53,7 +39,7 @@ class Authentication {
     return true;
   }
 
-  String get wsURL {
+  String get wsFullURL {
     return 'wss://riot:${this.token}@127.0.0.1:${this.port}';
   }
 

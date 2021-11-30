@@ -1,5 +1,3 @@
-import 'package:lcu_connector/lcu.dart';
-
 class Summoner {
   final int accountId;
   final String displayName;
@@ -47,16 +45,4 @@ class RerollInformation {
   late int numberOfRolls;
   late int pointsCostToRoll;
   late int pointsToReroll;
-}
-
-class SummonerManager {
-  LcuApi client;
-  final String baseUrl = "/lol-summoner/v1";
-  SummonerManager(this.client);
-  Future<Summoner> get currentSummoner {
-    var res = client.request(HttpMethod.GET, "$baseUrl/current-summoner");
-    return res.then<Summoner>((s) {
-      return Summoner.fromJson(s);
-    });
-  }
 }

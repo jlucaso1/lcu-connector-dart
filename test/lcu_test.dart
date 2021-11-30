@@ -1,14 +1,21 @@
-// import 'package:lcu_connector/lcu.dart';
-// import 'package:lcu_connector/summoner/summoner.dart';
-// import 'package:test/test.dart';
+import 'package:lcu_connector/lcu.dart';
+import 'package:lcu_connector/summoner/summoner.dart';
+import 'package:test/test.dart';
 
 void main() async {
-  // test('get connection', () async {
-  //   final api = new LcuApi();
-  //   api.events.on('connected', (argument) async {
-  //     assert(await api.summonerManager.currentSummoner is Summoner);
-  //     assert(argument is LcuApi);
-  //   });
-  //   await Future.delayed(Duration(seconds: 5));
-  // });
+  test('new request test', () async {
+    var lcu = LcuApi();
+    await lcu.start();
+    var result = await lcu
+        .request(HttpMethod.GET, '/lol-summoner/v1/current-summoner', {"a": 1});
+    var summoner = Summoner.fromJson(result.data);
+    expect(summoner.summonerLevel, greaterThan(0));
+  });
+  test('create new room', () async {
+    var lcu = LcuApi();
+    await lcu.start();
+    var result = await lcu
+        .request(HttpMethod.POST, '/lol-lobby/v2/lobby', {"queueId": 420});
+    expect(result.data, isNotNull);
+  });
 }

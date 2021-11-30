@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   event_listener: ^0.2.0
-  http: ^0.13.4
+  uno: ^1.0.1+3
 
 dev_dependencies:
   test: ^1.19.4
