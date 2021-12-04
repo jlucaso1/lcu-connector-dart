@@ -1,25 +1,11 @@
-import 'package:lcu_connector/event_response.dart';
-import 'package:lcu_connector/lcu.dart';
+import 'package:lcu_connector/authentication.dart';
+import 'package:lcu_connector/websocket.dart';
 
 main() async {
-  final lcu = new LcuApi();
+  var credentials = await authenticate();
+  var ws = await connect(credentials);
 
-  lcu.events.on('connected', (_) async {
-    print("Connected");
-
-    // Listen for queue changes
-    lcu.events.on('/lol-matchmaking/v1/search', (message) {
-      EventResponse evResponse = message;
-      if (evResponse.eventType == 'Create') {
-        print('Queue search started');
-      } else if (evResponse.eventType == 'Delete') {
-        print('Queue search stopped');
-      }
-    });
+  ws.on('/lol-matchmaking/v1/search', (argument) {
+    print(argument);
   });
-  lcu.events.on('error', (message) {
-    print(message.toString());
-  });
-
-  await lcu.start();
 }
